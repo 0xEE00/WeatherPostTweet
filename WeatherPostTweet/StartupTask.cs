@@ -19,6 +19,8 @@ namespace WeatherPostTweet
     public sealed class StartupTask : IBackgroundTask
     {
         string WeatherInfo = "";
+        char delimetar = ',';
+
 
         public async void Run(IBackgroundTaskInstance taskInstance)
         {
@@ -34,11 +36,20 @@ namespace WeatherPostTweet
             BackgroundTaskDeferral deferral = taskInstance.GetDeferral(); //Sprečava zatvaranje glavnog procesa dok se u pozadini izvršavaju asinhroni procesi
             WeatherInfo = await MakeWebRequest(@"http://www.hidmet.gov.rs/ciril/osmotreni/kosutnjak.xml");
             Auth.SetUserCredentials("MuEtY8o5bgVF2kbX5RcXDp6rA", "Xw2qiJlj8qeB2pv2W7pe45Y55D9IXPrLShQb6TA8T4ZbhmHpYs", "61542070-19Fwt5IhgVeQufhBiqX7Hi9AGnsoeKLZnos4Fv4Nj", "bNjYwTVwgetZXgo6cZ5jE6tjzsh0XOCa7LLOz661hIkzj");
-            Tweet.PublishTweet(WeatherInfo.Substring(0, 140));
+
+            XmlDocument xml = new XmlDocument();
+            xml.LoadXml(WeatherInfo);
+            XmlNodeList xmlNodes = xml.GetElementsByTagName("summary");
+            WeatherInfo = xmlNodes[0].InnerText;
+
+            String[] substring = WeatherInfo.Split(delimetar);
+
+
+            Tweet.PublishTweet(substring[0] + "\n" + substring[2] + "\n" + substring[3] + "\n" + substring[4] + "\n" + substring[5] + "\n" + "#RaspberryPi");
             deferral.Complete();
         }
 
-        public IAsyncOperation<string> MakeWebRequest(string uri) //IAsyncOperation je valida Windows Runtime povratna vrednost koja predstavlja jednu asinhronu operaciju
+        public IAsyncOperation<string> MakeWebRequest(string uri) //IAsyncOperation je validna Windows Runtime povratna vrednost koja predstavlja jednu asinhronu operaciju
         {
 
             return this.GetUriContentAsynHelper(uri).AsAsyncOperation();
@@ -46,7 +57,7 @@ namespace WeatherPostTweet
             //await dialog.ShowAsync();
         }
 
-       
+
 
         private async Task<string> GetUriContentAsynHelper(string uri) //S obzirom da je UWP Windows Runtime ne možemo da imamo javnu metodu koja vraća Task
         {
