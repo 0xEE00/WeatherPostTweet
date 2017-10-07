@@ -12,6 +12,7 @@ using Windows.UI.Popups;
 using Tweetinvi;
 using Windows.Foundation;
 using Tweetinvi.Models;
+using Tweetinvi.Parameters;
 
 // The Background Application template is documented at http://go.microsoft.com/fwlink/?LinkID=533884&clcid=0x409
 
@@ -33,46 +34,42 @@ namespace WeatherPostTweet
             // from closing prematurely by using BackgroundTaskDeferral as
             // described in http://aka.ms/backgroundtaskdeferral
             //
-
-            //Linija ispod svaki pozadiniski proces za svaku asinhronu operaciju koja je inicijalizovana
             BackgroundTaskDeferral deferral = taskInstance.GetDeferral(); //Sprečava zatvaranje glavnog procesa dok se u pozadini izvršavaju asinhroni procesi
             while (true)
             {
                 weatherInfo = await MakeWebRequest(@"http://www.hidmet.gov.rs/ciril/osmotreni/kosutnjak.xml");
+                weatherInfo = GetWeatherInfoXML(weatherInfo);
+                //var tweets = Search.SearchTweets("Датум осматрања:");
                 Auth.SetUserCredentials("MuEtY8o5bgVF2kbX5RcXDp6rA", "Xw2qiJlj8qeB2pv2W7pe45Y55D9IXPrLShQb6TA8T4ZbhmHpYs", "61542070-19Fwt5IhgVeQufhBiqX7Hi9AGnsoeKLZnos4Fv4Nj", "bNjYwTVwgetZXgo6cZ5jE6tjzsh0XOCa7LLOz661hIkzj");
-
-
-                weatherInfo = GetWeatherInfo(weatherInfo);
-                String[] substring = weatherInfo.Split(delimetar);
-
-                String[] substringDate = substring[0].Split(delimetar2);
-                String[] substringTime = substring[2].Split(delimetar2);
-                String[] substringTemperature = substring[3].Split(delimetar2);
-                String[] substringPressure = substring[4].Split(delimetar2);
-                String[] substringHumidity = substring[5].Split(delimetar2);
-
-                var tweets = Search.SearchTweets("Датум осматрања:");
-
-                ITweet publishedTweet = Tweet.PublishTweet("#Belgrade" + "\n" +
-                    "Date: " + substringDate + "\n" +
-                    "Time: " + substringTime + "\n" +
-                    "Temperature: " + substringTemperature + "\n" +
-                    "Pressure: " + substringPressure + "\n" +
-                    "Humidity: " + substringHumidity + "\n" +
-                    "#RaspberryPi");
-                //ITweet publishedTweet = Tweet.PublishTweet("#Belgrade" + "\n" + substring[0] + "\n" + substring[2] + "\n" + substring[3] + "\n" + substring[4] + "\n" + substring[5] + "\n" + "#RaspberryPi");
-                //var publishedTweet = Tweet.PublishTweet("#Belgrade" + "\n" + substring[0] + "\n" + substring[2] + "\n" + substring[3] + "\n" + substring[4] + "\n" + substring[5] + "\n" + "#RaspberryPi");
+                ITweet publishedTweet = Tweet.PublishTweet(SplitAndFormat(weatherInfo));
                 //var tweetId = publishedTweet.Id.ToString();
-                await Task.Delay(60000);
+                await Task.Delay(600000);//60000 = 1min; 360000 = 1h
                 publishedTweet.Destroy();
-                //60000 = 1min
-                //360000 = 1h
             }
-
             deferral.Complete();
         }
 
-        private string GetWeatherInfo(string weatherInfo)
+        private string SplitAndFormat(string weatherInfo)
+        {
+            String[] substring = weatherInfo.Split(delimetar);
+
+            String[] substringDate = substring[0].Split(delimetar2);
+            String[] substringTime = substring[2].Split(delimetar2);
+            String[] substringTemperature = substring[3].Split(delimetar2);
+            String[] substringPressure = substring[4].Split(delimetar2);
+            String[] substringHumidity = substring[5].Split(delimetar2);
+
+            string formatWeatherInfo = "#Belgrade" + "\n" +
+                    "Date: " + substringDate[1].Trim() + "\n" +
+                    "Time: " + substringTime[1].Trim() + ":" + substringTime[2].Trim() + ":" + substringTime[3].Trim() + "\n" +
+                    "Temperature: " + substringTemperature[1].Trim() + "\n" +
+                    "Pressure: " + substringPressure[1].Trim() + "\n" +
+                    "Humidity: " + substringHumidity[1].Trim() + "\n" +
+                    "#RaspberryPi";
+            return formatWeatherInfo;
+        }
+
+        private string GetWeatherInfoXML(string weatherInfo)
         {
             XmlDocument xml = new XmlDocument();
             xml.LoadXml(weatherInfo);
