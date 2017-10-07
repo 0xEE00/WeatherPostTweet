@@ -11,6 +11,7 @@ using System.IO;
 using Windows.UI.Popups;
 using Tweetinvi;
 using Windows.Foundation;
+using Tweetinvi.Models;
 
 // The Background Application template is documented at http://go.microsoft.com/fwlink/?LinkID=533884&clcid=0x409
 
@@ -18,8 +19,9 @@ namespace WeatherPostTweet
 {
     public sealed class StartupTask : IBackgroundTask
     {
-        string WeatherInfo = "";
+        string weatherInfo = "";
         char delimetar = ',';
+        char delimetar2 = ':';
 
 
         public async void Run(IBackgroundTaskInstance taskInstance)
@@ -36,19 +38,33 @@ namespace WeatherPostTweet
             BackgroundTaskDeferral deferral = taskInstance.GetDeferral(); //Sprečava zatvaranje glavnog procesa dok se u pozadini izvršavaju asinhroni procesi
             while (true)
             {
-                WeatherInfo = await MakeWebRequest(@"http://www.hidmet.gov.rs/ciril/osmotreni/kosutnjak.xml");
+                weatherInfo = await MakeWebRequest(@"http://www.hidmet.gov.rs/ciril/osmotreni/kosutnjak.xml");
                 Auth.SetUserCredentials("MuEtY8o5bgVF2kbX5RcXDp6rA", "Xw2qiJlj8qeB2pv2W7pe45Y55D9IXPrLShQb6TA8T4ZbhmHpYs", "61542070-19Fwt5IhgVeQufhBiqX7Hi9AGnsoeKLZnos4Fv4Nj", "bNjYwTVwgetZXgo6cZ5jE6tjzsh0XOCa7LLOz661hIkzj");
 
-                XmlDocument xml = new XmlDocument();
-                xml.LoadXml(WeatherInfo);
-                XmlNodeList xmlNodes = xml.GetElementsByTagName("summary");
-                WeatherInfo = xmlNodes[0].InnerText;
 
-                String[] substring = WeatherInfo.Split(delimetar);
+                weatherInfo = GetWeatherInfo(weatherInfo);
+                String[] substring = weatherInfo.Split(delimetar);
 
+                String[] substringDate = substring[0].Split(delimetar2);
+                String[] substringTime = substring[2].Split(delimetar2);
+                String[] substringTemperature = substring[3].Split(delimetar2);
+                String[] substringPressure = substring[4].Split(delimetar2);
+                String[] substringHumidity = substring[5].Split(delimetar2);
 
-                Tweet.PublishTweet("#Belgrade" + "\n" + substring[0] + "\n" + substring[2] + "\n" + substring[3] + "\n" + substring[4] + "\n" + substring[5] + "\n" + "#RaspberryPi");
-                await Task.Delay(3600000);
+                var tweets = Search.SearchTweets("Датум осматрања:");
+
+                ITweet publishedTweet = Tweet.PublishTweet("#Belgrade" + "\n" +
+                    "Date: " + substringDate + "\n" +
+                    "Time: " + substringTime + "\n" +
+                    "Temperature: " + substringTemperature + "\n" +
+                    "Pressure: " + substringPressure + "\n" +
+                    "Humidity: " + substringHumidity + "\n" +
+                    "#RaspberryPi");
+                //ITweet publishedTweet = Tweet.PublishTweet("#Belgrade" + "\n" + substring[0] + "\n" + substring[2] + "\n" + substring[3] + "\n" + substring[4] + "\n" + substring[5] + "\n" + "#RaspberryPi");
+                //var publishedTweet = Tweet.PublishTweet("#Belgrade" + "\n" + substring[0] + "\n" + substring[2] + "\n" + substring[3] + "\n" + substring[4] + "\n" + substring[5] + "\n" + "#RaspberryPi");
+                //var tweetId = publishedTweet.Id.ToString();
+                await Task.Delay(60000);
+                publishedTweet.Destroy();
                 //60000 = 1min
                 //360000 = 1h
             }
@@ -56,11 +72,19 @@ namespace WeatherPostTweet
             deferral.Complete();
         }
 
+        private string GetWeatherInfo(string weatherInfo)
+        {
+            XmlDocument xml = new XmlDocument();
+            xml.LoadXml(weatherInfo);
+            XmlNodeList xmlNodes = xml.GetElementsByTagName("summary");
+            return xmlNodes[0].InnerText;
+        }
+
         public IAsyncOperation<string> MakeWebRequest(string uri) //IAsyncOperation je validna Windows Runtime povratna vrednost koja predstavlja jednu asinhronu operaciju
         {
 
             return this.GetUriContentAsynHelper(uri).AsAsyncOperation();
-            //var dialog = new MessageDialog(WeatherInfo);
+            //var dialog = new MessageDialog(weatherInfo);
             //await dialog.ShowAsync();
         }
 
