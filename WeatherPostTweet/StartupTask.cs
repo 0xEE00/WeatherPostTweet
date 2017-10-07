@@ -34,18 +34,25 @@ namespace WeatherPostTweet
 
             //Linija ispod svaki pozadiniski proces za svaku asinhronu operaciju koja je inicijalizovana
             BackgroundTaskDeferral deferral = taskInstance.GetDeferral(); //Sprečava zatvaranje glavnog procesa dok se u pozadini izvršavaju asinhroni procesi
-            WeatherInfo = await MakeWebRequest(@"http://www.hidmet.gov.rs/ciril/osmotreni/kosutnjak.xml");
-            Auth.SetUserCredentials("MuEtY8o5bgVF2kbX5RcXDp6rA", "Xw2qiJlj8qeB2pv2W7pe45Y55D9IXPrLShQb6TA8T4ZbhmHpYs", "61542070-19Fwt5IhgVeQufhBiqX7Hi9AGnsoeKLZnos4Fv4Nj", "bNjYwTVwgetZXgo6cZ5jE6tjzsh0XOCa7LLOz661hIkzj");
+            while (true)
+            {
+                WeatherInfo = await MakeWebRequest(@"http://www.hidmet.gov.rs/ciril/osmotreni/kosutnjak.xml");
+                Auth.SetUserCredentials("MuEtY8o5bgVF2kbX5RcXDp6rA", "Xw2qiJlj8qeB2pv2W7pe45Y55D9IXPrLShQb6TA8T4ZbhmHpYs", "61542070-19Fwt5IhgVeQufhBiqX7Hi9AGnsoeKLZnos4Fv4Nj", "bNjYwTVwgetZXgo6cZ5jE6tjzsh0XOCa7LLOz661hIkzj");
 
-            XmlDocument xml = new XmlDocument();
-            xml.LoadXml(WeatherInfo);
-            XmlNodeList xmlNodes = xml.GetElementsByTagName("summary");
-            WeatherInfo = xmlNodes[0].InnerText;
+                XmlDocument xml = new XmlDocument();
+                xml.LoadXml(WeatherInfo);
+                XmlNodeList xmlNodes = xml.GetElementsByTagName("summary");
+                WeatherInfo = xmlNodes[0].InnerText;
 
-            String[] substring = WeatherInfo.Split(delimetar);
+                String[] substring = WeatherInfo.Split(delimetar);
 
 
-            Tweet.PublishTweet(substring[0] + "\n" + substring[2] + "\n" + substring[3] + "\n" + substring[4] + "\n" + substring[5] + "\n" + "#RaspberryPi");
+                Tweet.PublishTweet("#Belgrade" + "\n" + substring[0] + "\n" + substring[2] + "\n" + substring[3] + "\n" + substring[4] + "\n" + substring[5] + "\n" + "#RaspberryPi");
+                await Task.Delay(3600000);
+                //60000 = 1min
+                //360000 = 1h
+            }
+
             deferral.Complete();
         }
 
